@@ -22,7 +22,7 @@ type Result = {
 const copy = {
   hi: {
     kicker: "AI फसल स्कैन",
-    heading: "फोटो ल, संभावित कारण जानें",
+    heading: "फोटो लें, संभावित कारण जानें",
     sub: "फसल की पत्ती या तने की साफ़ फोटो लें। AI कई संभावित कारण बताएगा — पक्का निदान केंद्र पर ही होगा। कोई दवा का नाम या मात्रा यहाँ नहीं बताई जाती।",
     takePhoto: "फोटो लें",
     upload: "गैलरी से चुनें",
@@ -124,7 +124,7 @@ export function CropPhotoScan() {
     setErrorMsg("")
     try {
       const { base64, mediaType } = await compressImage(file)
-      setPreview(data:${mediaType};base64,${base64})
+      setPreview(`data:${mediaType};base64,${base64}`)
 
       const res = await fetch("/api/analyze-crop", {
         method: "POST",
@@ -230,7 +230,7 @@ export function CropPhotoScan() {
                     <p className="mt-1 text-sm text-muted-foreground">{result.visualObservations}</p>
                   )}
                 </div>
-                <span className={shrink-0 rounded-full px-3 py-1 text-xs font-semibold text-white ${urgencyColor[result.urgency]}}>
+                <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold text-white ${urgencyColor[result.urgency]}`}>
                   {result.urgency}
                 </span>
               </div>
@@ -247,7 +247,7 @@ export function CropPhotoScan() {
                 <div className="space-y-2">
                   {result.possibleCauses?.map((cause, i) => (
                     <div key={i} className="flex items-start gap-3 rounded-2xl border border-border bg-background p-4">
-                      <span className={mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${likelihoodColor[cause.likelihood]}} />
+                      <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${likelihoodColor[cause.likelihood]}`} />
                       <div className="flex-1">
                         <div className="flex items-center justify-between gap-2">
                           <p className="font-medium text-foreground">{cause.name}</p>
