@@ -8,6 +8,10 @@ import { NextRequest, NextResponse } from "next/server"
 
 const GEMINI_MODEL = "gemini-3.6-flash"
 
+// Allow up to 60 seconds for the AI analysis call, since the default
+// serverless timeout (10s) is often too short for image analysis.
+export const maxDuration = 60
+
 function buildSystemPrompt(lang: "hi" | "en") {
   const languageLine =
     lang === "hi"
@@ -88,11 +92,31 @@ export async function POST(req: NextRequest) {
     const data = await geminiRes.json()
     const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
     if (!text) {
-      return NextResponse.json({ error: "No analysis text returned." }, { status: 502 })
+      const blockReason = data?.promptFeedback?.blockReason || data?.candidates?.[0]?.finishReason
+      return NextResponse.json(
+        { error: `No analysis text returned${blockReason ? ` (${blockReason})` : ""}.` },
+        { status: 502 }
+      )
     }
 
-    const cleaned = text.replace(/```json|```/g, "").trim()
-    const parsed = JSON.parse(cleaned)
+    // Gemini sometimes wraps JSON in markdown fences or adds stray text
+    // around it. Extract the first {...} block to parse reliably.
+    let cleaned = text.replace(/```json|```/g, "").trim()
+    const firstBrace = cleaned.indexOf("{")
+    const lastBrace = cleaned.lastIndexOf("}")
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      cleaned = cleaned.slice(firstBrace, lastBrace + 1)
+    }
+
+    let parsed
+    try {
+      parsed = JSON.parse(cleaned)
+    } catch {
+      return NextResponse.json(
+        { error: "The analysis service returned an unexpected format. Please try again." },
+        { status: 502 }
+      )
+    }
     return NextResponse.json(parsed)
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || "Unexpected error analyzing photo." }, { status: 500 })
