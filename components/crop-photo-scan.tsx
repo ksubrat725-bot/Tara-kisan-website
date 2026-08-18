@@ -22,7 +22,7 @@ type Result = {
 const copy = {
   hi: {
     kicker: "AI फसल स्कैन",
-    heading: "फोटो लें, संभावित कारण जानें",
+    heading: "फोटो ल, संभावित कारण जानें",
     sub: "फसल की पत्ती या तने की साफ़ फोटो लें। AI कई संभावित कारण बताएगा — पक्का निदान केंद्र पर ही होगा। कोई दवा का नाम या मात्रा यहाँ नहीं बताई जाती।",
     takePhoto: "फोटो लें",
     upload: "गैलरी से चुनें",
@@ -74,12 +74,39 @@ const likelihoodColor: Record<string, string> = {
   low: "bg-muted-foreground/60",
 }
 
-function fileToBase64(file: File): Promise<string> {
+// Resizes and compresses the photo in the browser before upload, so large
+// phone-camera images (often 3-8MB) don't hit the server's request-size limit.
+function compressImage(file: File, maxDimension = 1280, quality = 0.75): Promise<{ base64: string; mediaType: string }> {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve((reader.result as string).split(",")[1])
-    reader.onerror = () => reject(new Error("Could not read the photo."))
-    reader.readAsDataURL(file)
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      let { width, height } = img
+      if (width > height && width > maxDimension) {
+        height = Math.round((height * maxDimension) / width)
+        width = maxDimension
+      } else if (height > maxDimension) {
+        width = Math.round((width * maxDimension) / height)
+        height = maxDimension
+      }
+      const canvas = document.createElement("canvas")
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext("2d")
+      if (!ctx) {
+        reject(new Error("Could not process the photo."))
+        return
+      }
+      ctx.drawImage(img, 0, 0, width, height)
+      const dataUrl = canvas.toDataURL("image/jpeg", quality)
+      resolve({ base64: dataUrl.split(",")[1], mediaType: "image/jpeg" })
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error("Could not load the photo."))
+    }
+    img.src = url
   })
 }
 
@@ -96,9 +123,8 @@ export function CropPhotoScan() {
     setStatus("loading")
     setErrorMsg("")
     try {
-      const mediaType = file.type || "image/jpeg"
-      const base64 = await fileToBase64(file)
-      setPreview(`data:${mediaType};base64,${base64}`)
+      const { base64, mediaType } = await compressImage(file)
+      setPreview(data:${mediaType};base64,${base64})
 
       const res = await fetch("/api/analyze-crop", {
         method: "POST",
@@ -204,7 +230,7 @@ export function CropPhotoScan() {
                     <p className="mt-1 text-sm text-muted-foreground">{result.visualObservations}</p>
                   )}
                 </div>
-                <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold text-white ${urgencyColor[result.urgency]}`}>
+                <span className={shrink-0 rounded-full px-3 py-1 text-xs font-semibold text-white ${urgencyColor[result.urgency]}}>
                   {result.urgency}
                 </span>
               </div>
@@ -221,7 +247,7 @@ export function CropPhotoScan() {
                 <div className="space-y-2">
                   {result.possibleCauses?.map((cause, i) => (
                     <div key={i} className="flex items-start gap-3 rounded-2xl border border-border bg-background p-4">
-                      <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${likelihoodColor[cause.likelihood]}`} />
+                      <span className={mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${likelihoodColor[cause.likelihood]}} />
                       <div className="flex-1">
                         <div className="flex items-center justify-between gap-2">
                           <p className="font-medium text-foreground">{cause.name}</p>
