@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from "next/server"
 // Get a free key at https://aistudio.google.com/apikey — the free tier
 // covers Gemini Flash models with vision input at no cost.
 
-const GEMINI_MODEL = "gemini-2.5-flash"
+const GEMINI_MODEL = "gemini-3.6-flash"
 
 function buildSystemPrompt(lang: "hi" | "en") {
   const languageLine =
