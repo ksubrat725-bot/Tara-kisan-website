@@ -68,7 +68,7 @@ export function Founder() {
           <article className="rounded-3xl bg-primary p-8 text-primary-foreground">
             <div className="relative mb-5 h-24 w-24 overflow-hidden rounded-full border-4 border-accent">
               <Image
-                src="/placeholder-user.jpg"
+                src="/images/founder-photo.jpg"
                 alt={t.heading}
                 fill
                 className="object-cover"

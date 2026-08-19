@@ -74,39 +74,12 @@ const likelihoodColor: Record<string, string> = {
   low: "bg-muted-foreground/60",
 }
 
-// Resizes and compresses the photo in the browser before upload, so large
-// phone-camera images (often 3-8MB) don't hit the server's request-size limit.
-function compressImage(file: File, maxDimension = 1280, quality = 0.75): Promise<{ base64: string; mediaType: string }> {
+function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
-    const img = new Image()
-    const url = URL.createObjectURL(file)
-    img.onload = () => {
-      URL.revokeObjectURL(url)
-      let { width, height } = img
-      if (width > height && width > maxDimension) {
-        height = Math.round((height * maxDimension) / width)
-        width = maxDimension
-      } else if (height > maxDimension) {
-        width = Math.round((width * maxDimension) / height)
-        height = maxDimension
-      }
-      const canvas = document.createElement("canvas")
-      canvas.width = width
-      canvas.height = height
-      const ctx = canvas.getContext("2d")
-      if (!ctx) {
-        reject(new Error("Could not process the photo."))
-        return
-      }
-      ctx.drawImage(img, 0, 0, width, height)
-      const dataUrl = canvas.toDataURL("image/jpeg", quality)
-      resolve({ base64: dataUrl.split(",")[1], mediaType: "image/jpeg" })
-    }
-    img.onerror = () => {
-      URL.revokeObjectURL(url)
-      reject(new Error("Could not load the photo."))
-    }
-    img.src = url
+    const reader = new FileReader()
+    reader.onload = () => resolve((reader.result as string).split(",")[1])
+    reader.onerror = () => reject(new Error("Could not read the photo."))
+    reader.readAsDataURL(file)
   })
 }
 
@@ -118,12 +91,14 @@ export function CropPhotoScan() {
   const [result, setResult] = useState<Result | null>(null)
   const [errorMsg, setErrorMsg] = useState("")
   const cameraRef = useRef<HTMLInputElement>(null)
+  const uploadRef = useRef<HTMLInputElement>(null)
 
   const analyze = async (file: File) => {
     setStatus("loading")
     setErrorMsg("")
     try {
-      const { base64, mediaType } = await compressImage(file)
+      const mediaType = file.type || "image/jpeg"
+      const base64 = await fileToBase64(file)
       setPreview(`data:${mediaType};base64,${base64}`)
 
       const res = await fetch("/api/analyze-crop", {
@@ -182,19 +157,33 @@ export function CropPhotoScan() {
                 className="hidden"
                 id="crop-camera-input"
               />
-              <input type="file" accept="image/*" onChange={handleFile} className="hidden" id="crop-upload-input" />
-              <label htmlFor="crop-camera-input">
-                <Button render={<span />} nativeButton={false} size="lg" className="cursor-pointer rounded-full">
-                  <Camera className="h-4 w-4" />
-                  {t.takePhoto}
-                </Button>
-              </label>
-              <label htmlFor="crop-upload-input">
-                <Button render={<span />} nativeButton={false} size="lg" variant="outline" className="cursor-pointer rounded-full bg-transparent">
-                  <Upload className="h-4 w-4" />
-                  {t.upload}
-                </Button>
-              </label>
+              <input
+                ref={uploadRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFile}
+                className="hidden"
+                id="crop-upload-input"
+              />
+              <Button
+                render={<button type="button" onClick={() => cameraRef.current?.click()} />}
+                nativeButton={false}
+                size="lg"
+                className="cursor-pointer rounded-full"
+              >
+                <Camera className="h-4 w-4" />
+                {t.takePhoto}
+              </Button>
+              <Button
+                render={<button type="button" onClick={() => uploadRef.current?.click()} />}
+                nativeButton={false}
+                size="lg"
+                variant="outline"
+                className="cursor-pointer rounded-full bg-transparent"
+              >
+                <Upload className="h-4 w-4" />
+                {t.upload}
+              </Button>
             </div>
           )}
 
