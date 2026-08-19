@@ -1,6 +1,7 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Fraunces, Inter, Noto_Sans_Devanagari } from 'next/font/google'
+import { PwaInstall } from '@/components/pwa-install'
 import './globals.css'
 
 const fraunces = Fraunces({
@@ -26,6 +27,12 @@ export const metadata: Metadata = {
   description:
     'तारा किसान सेवा केंद्र, सिंहेश्वर (बिहार) — प्रमाणित बीज, खाद, कीटनाशक और भरोसेमंद फसल सलाह। Certified seeds, fertilizers and trusted crop advisory for Bihar farmers.',
   generator: 'v0.app',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Tara Kisan',
+  },
   icons: {
     icon: [
       {
@@ -40,6 +47,11 @@ export const metadata: Metadata = {
         url: '/icon.svg',
         type: 'image/svg+xml',
       },
+      {
+        url: '/icon-192.png',
+        sizes: '192x192',
+        type: 'image/png',
+      },
     ],
     apple: '/apple-icon.png',
   },
@@ -48,8 +60,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   colorScheme: 'light dark',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: 'white' },
-    { media: '(prefers-color-scheme: dark)', color: 'black' },
+    { media: '(prefers-color-scheme: light)', color: '#1F7A3D' },
+    { media: '(prefers-color-scheme: dark)', color: '#0F3327' },
   ],
 }
 
@@ -65,6 +77,7 @@ export default function RootLayout({
     >
       <body className="antialiased font-sans">
         {children}
+        <PwaInstall />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
